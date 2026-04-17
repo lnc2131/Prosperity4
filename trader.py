@@ -32,22 +32,22 @@ POSITION_LIMIT = {
 PARAMS = {
     ASH: {
         "fair_value": 10000,
-        "take_width": 1,        # take any order at fair -/+ take_width
-        "clear_width": 0,       # flatten at fair when holding inventory
+        "take_width": 3,        # take any order at fair -/+ take_width
+        "clear_width": 1,       # flatten at fair when holding inventory
         "disregard_edge": 1,    # don't pennny orders inside this edge
         "join_edge": 2,         # join (match) best level within this edge
-        "default_edge": 4,      # otherwise quote at fair +/- default_edge
-        "soft_position_limit": 40,
+        "default_edge": 3,      # otherwise quote at fair +/- default_edge
+        "soft_position_limit": 50,
     },
     PEPPER: {
-        "take_width": 1,
+        "take_width": 2,
         "clear_width": 0,
         "prevent_adverse": True,
-        "adverse_volume": 15,
+        "adverse_volume": 10,
         "reversion_beta": -0.229,  # short-term reversion coefficient on returns
         "disregard_edge": 1,
         "join_edge": 0,
-        "default_edge": 1,
+        "default_edge": 2,
     },
 }
 
@@ -60,6 +60,22 @@ class Trader:
     def __init__(self, params=None):
         self.params = params if params is not None else PARAMS
         self.LIMIT = POSITION_LIMIT
+
+        # Optional env-var override used by gridsearch.py.
+        # Format: TRADER_PARAMS='{"ASH_COATED_OSMIUM": {"take_width": 2}, ...}'
+        # Unknown keys are ignored, so it's safe in all environments.
+        import os as _os
+        import json as _json
+        raw = _os.environ.get("TRADER_PARAMS")
+        if raw:
+            try:
+                override = _json.loads(raw)
+                if isinstance(override, dict):
+                    for product, patch in override.items():
+                        if product in self.params and isinstance(patch, dict):
+                            self.params[product].update(patch)
+            except Exception:
+                pass
 
     # -- helpers ---------------------------------------------------------------
 
