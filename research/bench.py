@@ -39,15 +39,28 @@ _PROD_RE = re.compile(
 def run(trader_path: Path, params_override: dict | None) -> dict:
     env = os.environ.copy()
     env["TRADER"] = str(trader_path)
+
+    # The trader reads optional overrides from a `trader_params.json` sidecar
+    # next to its own file. Write it for the duration of the run, delete after.
+    sidecar = trader_path.parent / "trader_params.json"
+    wrote_sidecar = False
     if params_override is not None:
-        env["TRADER_PARAMS"] = json.dumps(params_override)
-    proc = subprocess.run(
-        [str(BT), "--artifact-mode", "none"],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=300,
-    )
+        sidecar.write_text(json.dumps(params_override))
+        wrote_sidecar = True
+    try:
+        proc = subprocess.run(
+            [str(BT), "--artifact-mode", "none"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    finally:
+        if wrote_sidecar:
+            try:
+                sidecar.unlink()
+            except FileNotFoundError:
+                pass
     out = proc.stdout + proc.stderr
     tm = _TOTAL_RE.search(out)
     if not tm:
@@ -91,7 +104,8 @@ def main(argv=None) -> int:
     ap.add_argument("--label", required=True, help="strategy label (kept in benchmarks.csv)")
     ap.add_argument("--notes", default="", help="optional free-text note")
     ap.add_argument("--params-json", default=None,
-                    help="optional JSON dict of TRADER_PARAMS override, applied via env var")
+                    help="optional JSON dict of param override, written to a sidecar "
+                         "trader_params.json next to the trader file for one run")
     args = ap.parse_args(argv)
 
     trader_path = Path(args.trader).resolve()

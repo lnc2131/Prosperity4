@@ -2,3 +2,5 @@ timestamp,strategy,params_json,pnl_total,pnl_d-2,pnl_d-1,pnl_d0,pnl_ash,pnl_pepp
 2026-04-17T00:55:00Z,baseline_mm_tuned_v1,"{""ASH"":{""take_width"":3,""clear_width"":1,""default_edge"":3,""soft_position_limit"":50},""PEPPER"":{""take_width"":2,""adverse_volume"":10,""reversion_beta"":-0.229,""default_edge"":2}}",184422.5,66208.5,84228.0,33986.0,46666.0,137756.5,current champion (commit 85225a9)
 2026-04-17T05:36:48Z,champion_rebench,{},184422.5,66208.5,84228.0,33986.0,46666.0,137756.5,end-to-end test of bench.py
 2026-04-17T05:37:27Z,test_rejection_noop,{},0.0,0.0,0.0,0.0,0.0,0.0,rejected (delta_total=-184422.50)
+2026-04-17T05:41:27Z,champion_postfix,{},184422.5,66208.5,84228.0,33986.0,46666.0,137756.5,verify after stripping import os
+2026-04-17T05:41:35Z,sidecar_smoketest,"{""ASH_COATED_OSMIUM"":{""take_width"":1}}",181084.5,64724.5,83303.0,33057.0,43328.0,137756.5,should differ from champion if sidecar works

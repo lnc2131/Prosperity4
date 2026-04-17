@@ -1,3 +1,8 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# Local-only sidecar for param injection during grid search.
+# Never commit — the website grader runs trader.py without it,
+# and a stale sidecar would silently change submitted behaviour.
+trader_params.json

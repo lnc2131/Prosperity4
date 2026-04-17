@@ -49,6 +49,7 @@ _(nothing in progress — pick from "Next up" or ideate first)_
 - **`benchmarks.csv` is append-only.** Never rewrite rows.
 - **Commit + push after every meaningful step** so any session can resume from any point.
 - **One in-flight idea at a time** under "Currently investigating". If interrupted, leave it there for the next session to pick up.
+- **Never put `import os` in `trader.py`.** The Prosperity grader rejects it ("forbidden pattern `import\s*os`"). Param overrides go through a `trader_params.json` sidecar (gitignored) read via `pathlib` + `open()`. `bench.py` and `gridsearch.py` write/delete that sidecar around each run.
 
 ## Resume command
 

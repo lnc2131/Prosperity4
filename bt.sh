@@ -6,7 +6,8 @@
 #   ./bt.sh                    # full round1, compact output
 #   ./bt.sh --day -1           # just day -1
 #   ./bt.sh --artifact-mode full --persist
-#   TRADER_PARAMS='{"ASH_COATED_OSMIUM":{"take_width":2}}' ./bt.sh
+#   ./bt.sh                    # runs trader.py with its current params
+#   # (param overrides go through `trader_params.json` sidecar — see gridsearch.py)
 #
 # Any extra args are passed through to the backtester.
 

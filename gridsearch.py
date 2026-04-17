@@ -37,6 +37,8 @@ from typing import Dict, Iterable, List, Tuple
 
 HERE = Path(__file__).resolve().parent
 BT = HERE / "bt.sh"
+TRADER = HERE / "trader.py"
+SIDECAR = HERE / "trader_params.json"  # written per-combo, deleted after
 
 # Current baseline defaults — used when a product is NOT being swept so the
 # other product's performance doesn't drift between runs.
@@ -97,16 +99,27 @@ _PRODUCT_RE = re.compile(
 
 
 def run_backtest(params_override: Dict[str, Dict]) -> Dict:
-    """Run one backtest with the given TRADER_PARAMS override; parse PnL."""
+    """Run one backtest with the given param override; parse PnL.
+
+    Writes a `trader_params.json` sidecar next to trader.py (the trader reads
+    it in __init__), runs bt.sh, and removes the sidecar afterwards. We do not
+    use env vars because the Prosperity grader rejects `import os` in trader.py.
+    """
     env = os.environ.copy()
-    env["TRADER_PARAMS"] = json.dumps(params_override)
-    proc = subprocess.run(
-        [str(BT), "--artifact-mode", "none"],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
+    SIDECAR.write_text(json.dumps(params_override))
+    try:
+        proc = subprocess.run(
+            [str(BT), "--artifact-mode", "none"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    finally:
+        try:
+            SIDECAR.unlink()
+        except FileNotFoundError:
+            pass
     out = proc.stdout + proc.stderr
     total_match = _TOTAL_RE.search(out)
     if not total_match:

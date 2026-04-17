@@ -5,6 +5,34 @@ Reverse-chronological (newest first).
 
 ---
 
+## 2026-04-17 — Submission rejected for `import os`; switched to sidecar JSON
+
+The Prosperity website grader rejected the first submission attempt with:
+
+> Code submitted contains malicious statements — Code submitted violates rule
+> `import\s*os` from forbidden patterns
+
+Trader.py had `import os as _os` to read `TRADER_PARAMS` from the environment
+(used by `gridsearch.py`). Removed entirely.
+
+**New mechanism**: trader.py reads an optional `trader_params.json` sidecar
+file located next to itself (via `pathlib.Path(__file__).resolve().parent`).
+`bench.py` and `gridsearch.py` write that file before each run and delete it
+afterwards. The sidecar is gitignored so it can never get committed and alter
+the live submission's behaviour.
+
+Verified post-fix:
+- bench.py reproduces 184,422.50 exactly with no override.
+- bench.py with `--params-json '{"ASH_COATED_OSMIUM":{"take_width":1}}'`
+  changes ASH PnL 46,666 → 43,328, confirming the sidecar is being read.
+- No leftover `trader_params.json` after either run (try/finally cleans up).
+
+**Lesson**: the old `Env-var param injection works cleanly through PyO3` note
+below is true *for the local backtester* but doesn't survive the grader.
+Sidecar JSON works for both.
+
+---
+
 ## 2026-04-17 — Baseline established, grid search infrastructure complete
 
 **Champion**: `baseline_mm_tuned_v1`, PnL 184,422.
