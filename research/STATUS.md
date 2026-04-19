@@ -6,17 +6,25 @@
 
 ## Current champion
 
-- **File**: [Prosperity4/trader.py](../trader.py) (commit `85225a9`)
-- **Round**: 1
-- **Total PnL (round1 days -2, -1, 0)**: **184,422**
-  - D-2: 66,208
-  - D-1: 84,228
-  - D=0: 33,986
-- **Per-product**:
-  - `ASH_COATED_OSMIUM`: 46,666
-  - `INTARIAN_PEPPER_ROOT`: 137,756
-- **Strategy label**: `baseline_mm_tuned_v1`
-- **Snapshot**: [strategies/00_champion_baseline.py](strategies/00_champion_baseline.py)
+- **File**: [Prosperity4/trader.py](../trader.py)
+- **Round**: 2 (live); also validated on round 1
+- **Strategy label**: `r2_retune` (PEPPER: beta=0, tw=4, de=3, cw=1)
+- **Snapshot**: [strategies/01_r2_retune.py](strategies/01_r2_retune.py)
+
+| Dataset | Total | ASH | PEPPER | Per-day |
+|---|---|---|---|---|
+| round1 | **252,341** | 46,666 | 205,675 | D-2=70,280 / D-1=93,646 / D=0=88,415 |
+| round2 | **256,462** | 54,043 | 202,419 | D-1=87,252 / D=0=85,511 / D+1=83,699 |
+
+Beats the prior champion (`baseline_mm_tuned_v1`) by +68k on R1 and +175k on R2.
+
+## Round 2 additions
+
+- **`bid()` returns 5000** — Market Access Fee bid. One-time fee, subtracted
+  from R2 profit only if we end up in the top 50% of bids across all teams.
+  Rationale in the code comment on `Trader.bid`.
+- **`bench.py --dataset round2`** — run against round 2 data. `benchmarks.csv`
+  now has a `dataset` column and a `pnl_d+1` column appended on the right.
 
 ## Currently investigating
 
@@ -24,9 +32,17 @@ _(nothing in progress — pick from "Next up" or ideate first)_
 
 ## Next up (in priority order)
 
-1. **Ideation pass** — brainstorm 5–10 concrete strategies for round 1. Append to [ideas.md](ideas.md).
-2. **Diagnose D=0 PEPPER weakness** — PEPPER earned only 19,236 on D=0 vs 51k/67k on other days. Read price CSV, find the regime change. Write findings to [NOTES.md](NOTES.md).
-3. Pick the highest-expected-value idea from [ideas.md](ideas.md) and implement it as `strategies/NN_<name>.py`.
+1. **Decide final MAF bid**. 5000 is a placeholder. See code comment on
+   `Trader.bid`. Pick a value before final submission.
+2. **Manual "Invest & Expand"** — 50k budget across Research/Scale/Speed,
+   submitted separately on the website (NOT in trader.py). PnL formula:
+   `(research(r) × scale(s) × speed_rank) − budget_used`. Think through
+   the optimization.
+3. **Diagnose why PEPPER `take_width=4` works so well** — sharp cliff
+   between tw=3 (60k) and tw=4 (200k). Likely adverse-selection; verify
+   by inspecting which orders we *used* to take at tw=2 but *don't* at tw=4.
+4. **Ideate new R2 strategies** — signals we haven't exploited (orderflow
+   imbalance, trade-print features, drift-aware fair value).
 
 ## Standard loop (every session)
 

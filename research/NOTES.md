@@ -5,6 +5,50 @@ Reverse-chronological (newest first).
 
 ---
 
+## 2026-04-19 — Round 2 retune: PEPPER reversion_beta was actively harmful
+
+Round 2 data added (3 days: D-1, D=0, D+1; ASH range 9979-10023, PEPPER drifts
++1000/day intraday — same pattern as R1). Same products, same 80-position
+limits. Round 2 introduces the Market Access Fee (MAF) via `Trader.bid()`:
+top 50% of bids across all teams get +25% quote flow on the live simulation,
+bid is deducted from R2 profit only if accepted. Testing uses 80% of quotes
+(no extra access), slightly randomized per submission.
+
+**Current-champion baseline on R2 data**: 81,451 total (ASH 54k, PEPPER 27k),
+with PEPPER **losing -15k on D+1**. Disaster.
+
+**Root cause**: `reversion_beta = -0.229` predicted the market would revert
+against recent returns. But PEPPER has a smooth +1000 intraday drift every
+day — so negative beta bets *against* the trend and systematically gets
+picked off. It worked acceptably on R1 only because R1 D-2/D-1 had noisier
+moments the reversion caught by luck.
+
+**Fix**: `reversion_beta = 0.0` (no prediction) + wider `take_width = 4`
+(only cross when edge ≥4 ticks; filters adverse-selection noise) +
+`default_edge = 3` + `clear_width = 1`. Sweeps around this are flat within
+a few %, so the optimum is not razor-thin.
+
+**Cross-validation**:
+
+| Config              | R1 total | R2 total | R1 PEPPER | R2 PEPPER |
+|---------------------|---------:|---------:|----------:|----------:|
+| Previous champion   |  184,422 |   81,451 |   137,756 |    27,408 |
+| R2 retune (new)     |  252,341 |  256,462 |   205,675 |   202,419 |
+| Delta               |  +67,919 | +175,011 |   +67,919 |  +175,011 |
+
+ASH is unchanged — the old ASH tuning still wins on both datasets (46,666 / 54,043).
+
+**Interesting observation**: `take_width` 3→4 on PEPPER jumps PnL 60k→200k.
+Sharp cliff. Hypothesis: many book-crossings at exactly 2-3 ticks are
+"small liquidity takers getting picked off" — adverse flow. tw=4 skips
+them. Worth a dedicated diagnosis session (see STATUS.md "Next up").
+
+**Tooling**: bt.sh now reads `DATASET` env var (default round1). bench.py
+takes `--dataset round2`. benchmarks.csv has `dataset` + `pnl_d+1` columns
+appended; pre-existing rows still valid (default to round1 semantically).
+
+---
+
 ## 2026-04-17 — Submission rejected for `import os`; switched to sidecar JSON
 
 The Prosperity website grader rejected the first submission attempt with:

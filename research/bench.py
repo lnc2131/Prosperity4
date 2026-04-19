@@ -29,16 +29,20 @@ BT = ROOT / "bt.sh"
 CSV_PATH = HERE / "benchmarks.csv"
 
 _TOTAL_RE = re.compile(r"^TOTAL\s+-\s+\d+\s+\d+\s+(-?\d+\.\d+)", re.MULTILINE)
-_DAY_RE = re.compile(r"^(D-2|D-1|D=0)\s+(-?\d+)\s+\d+\s+\d+\s+(-?\d+\.\d+)", re.MULTILINE)
+_DAY_RE = re.compile(
+    r"^(D-2|D-1|D=0|D\+1|D\+2)\s+(-?\d+)\s+\d+\s+\d+\s+(-?\d+\.\d+)", re.MULTILINE
+)
 _PROD_RE = re.compile(
     r"^([A-Z_][A-Z_0-9]+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)",
     re.MULTILINE,
 )
 
 
-def run(trader_path: Path, params_override: dict | None) -> dict:
+def run(trader_path: Path, params_override: dict | None,
+        dataset: str = "round1") -> dict:
     env = os.environ.copy()
     env["TRADER"] = str(trader_path)
+    env["DATASET"] = dataset
 
     # The trader reads optional overrides from a `trader_params.json` sidecar
     # next to its own file. Write it for the duration of the run, delete after.
@@ -75,15 +79,21 @@ def run(trader_path: Path, params_override: dict | None) -> dict:
     return {"total": total, "days": days, "products": products, "stdout": out}
 
 
-def append_row(label: str, params_override: dict | None, metrics: dict, notes: str):
+def append_row(label: str, params_override: dict | None, metrics: dict,
+               notes: str, dataset: str = "round1"):
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     fresh = not CSV_PATH.exists()
     with CSV_PATH.open("a", newline="") as f:
         w = csv.writer(f)
         if fresh:
+            # Column layout is stable; `dataset` + `pnl_d+1` are appended on
+            # the right so pre-existing rows (written before R2) are still
+            # valid — readers that don't know about the new columns just see
+            # fewer fields. Treat missing `dataset` as "round1".
             w.writerow(["timestamp", "strategy", "params_json", "pnl_total",
                         "pnl_d-2", "pnl_d-1", "pnl_d0",
-                        "pnl_ash", "pnl_pepper", "notes"])
+                        "pnl_ash", "pnl_pepper", "notes",
+                        "dataset", "pnl_d+1"])
         w.writerow([
             _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
             label,
@@ -95,6 +105,8 @@ def append_row(label: str, params_override: dict | None, metrics: dict, notes: s
             metrics["products"].get("ASH_COATED_OSMIUM", 0),
             metrics["products"].get("INTARIAN_PEPPER_ROOT", 0),
             notes,
+            dataset,
+            metrics["days"].get("D+1", 0),
         ])
 
 
@@ -106,6 +118,8 @@ def main(argv=None) -> int:
     ap.add_argument("--params-json", default=None,
                     help="optional JSON dict of param override, written to a sidecar "
                          "trader_params.json next to the trader file for one run")
+    ap.add_argument("--dataset", default="round1",
+                    help="backtester dataset name (round1, round2, ...)")
     args = ap.parse_args(argv)
 
     trader_path = Path(args.trader).resolve()
@@ -120,14 +134,13 @@ def main(argv=None) -> int:
     if args.params_json:
         params = json.loads(args.params_json)
 
-    print(f"→ benchmarking {trader_path.name} as '{args.label}' ...")
-    m = run(trader_path, params)
-    append_row(args.label, params, m, args.notes)
+    print(f"→ benchmarking {trader_path.name} on {args.dataset} as '{args.label}' ...")
+    m = run(trader_path, params, dataset=args.dataset)
+    append_row(args.label, params, m, args.notes, dataset=args.dataset)
 
-    print(f"  total={m['total']:.2f}  "
-          f"D-2={m['days'].get('D-2', 0):.0f}  "
-          f"D-1={m['days'].get('D-1', 0):.0f}  "
-          f"D=0={m['days'].get('D=0', 0):.0f}")
+    days = m["days"]
+    day_str = "  ".join(f"{k}={v:.0f}" for k, v in days.items())
+    print(f"  total={m['total']:.2f}  {day_str}")
     for p, v in m["products"].items():
         print(f"  {p}: {v:.2f}")
     print(f"  appended row → {CSV_PATH.relative_to(ROOT)}")

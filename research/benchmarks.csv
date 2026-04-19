@@ -4,3 +4,5 @@ timestamp,strategy,params_json,pnl_total,pnl_d-2,pnl_d-1,pnl_d0,pnl_ash,pnl_pepp
 2026-04-17T05:37:27Z,test_rejection_noop,{},0.0,0.0,0.0,0.0,0.0,0.0,rejected (delta_total=-184422.50)
 2026-04-17T05:41:27Z,champion_postfix,{},184422.5,66208.5,84228.0,33986.0,46666.0,137756.5,verify after stripping import os
 2026-04-17T05:41:35Z,sidecar_smoketest,"{""ASH_COATED_OSMIUM"":{""take_width"":1}}",181084.5,64724.5,83303.0,33057.0,43328.0,137756.5,should differ from champion if sidecar works
+2026-04-19T21:53:18Z,r2_retune_round1,{},252341.0,70280.0,93646.0,88415.0,46666.0,205675.0,R2-tuned params verified on R1 dataset
+2026-04-19T21:54:38Z,r2_retune_round2,{},256462.0,0,87252.0,85511.0,54043.0,202419.0,"R2-tuned PEPPER params (beta=0, tw=4, de=3, cw=1) on R2 dataset",round2,83699.0
